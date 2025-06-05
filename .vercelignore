@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build files
+.vite
+dist
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE files
+.vscode
+.idea
+
+# Documentation files that aren't needed for deployment
+*.md
+DEVELOPMENT_GUIDE.md
+TECHNICAL_REFERENCE.md
+COMPLETE_IMPLEMENTATION_GUIDE.md
+BUG_FIX_SUBFORM_DATA_LOSS.md
+DEPLOYMENT_CHECKLIST.md
+DEPLOYMENT_MAINTENANCE_GUIDE.md
+ITERATION_DOCUMENTATION.md
+REFINED_IMPLEMENTATION_GUIDE.md
+UPDATE_SUMMARY_CLOSE_BUTTON.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
