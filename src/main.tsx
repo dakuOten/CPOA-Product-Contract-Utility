@@ -1,3 +1,4 @@
+/// <reference types="./types" />
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './index.css'
@@ -13,30 +14,37 @@ function initializeZohoApp(): void {
     }
 
     // Subscribe to PageLoad event before initialization
-    window.ZOHO.embeddedApp.on("PageLoad", function (data: ZohoPageLoadData) {
+    window.ZOHO.embeddedApp?.on("PageLoad", function (data: unknown) {
       console.log("PageLoad data received:", data)
 
-      // Validate data structure
-      if (!data || !data.data) {
+      // Type guard and validate data structure
+      const pageLoadData = data as ZohoPageLoadData
+      if (!pageLoadData || !pageLoadData.data) {
         console.error('Invalid PageLoad data received:', data)
         return
       }
 
       // Resize the widget for better visibility
-      window.ZOHO.CRM.UI.Resize({ 
-        height: "600", 
-        width: "800" 
-      }).then(function () {
-        renderApp(data)
-      }).catch(function (error) {
-        console.error('Error resizing widget:', error)
-        // Fallback: render without resizing
-        renderApp(data)
-      })
+      const zohoUI = window.ZOHO?.CRM?.UI
+      if (zohoUI && 'Resize' in zohoUI && typeof zohoUI.Resize === 'function') {
+        zohoUI.Resize({ 
+          height: "600", 
+          width: "800" 
+        }).then(function () {
+          renderApp(pageLoadData)
+        }).catch(function (error: unknown) {
+          console.error('Error resizing widget:', error)
+          // Fallback: render without resizing
+          renderApp(pageLoadData)
+        })
+      } else {
+        // Fallback: render without resizing if Resize is not available
+        renderApp(pageLoadData)
+      }
     })
 
     // Initialize the EmbeddedApp
-    window.ZOHO.embeddedApp.init()
+    window.ZOHO.embeddedApp?.init()
     console.log('ZOHO EmbeddedApp initialized successfully')
     
   } catch (error) {
