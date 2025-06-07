@@ -2,11 +2,20 @@
 
 ## 📋 Overview
 
-This document provides a comprehensive step-by-step guide for the Zoho CRM EmbeddedApp "Contract Product" functionality that allows users to manage contract items within deal records.
+This document provides a comprehensive step-by-step guide for the Zoho CRM EmbeddedApp "Contract Product" functionality that allows users to manage contract items within deal records and generate PM Requests.
 
-## 🆕 Latest Update: Auto-Close Behavior
+## 🆕 Latest Updates
 
-**NEW FEATURE**: When a user selects a product as a contract item, the widget now:
+### PM Request Generation Feature
+**NEW FEATURE**: When a contract product is selected, users can now:
+1. ✅ Generate PM Request records directly from the widget
+2. ✅ Automatically populate PM Request with deal and product data
+3. ✅ Use the same logic as the original Zoho automation function
+4. ✅ Handle complex product types and contract terms
+5. ✅ Calculate MRC totals and handle contact information
+
+### Auto-Close Behavior
+**EXISTING FEATURE**: When a user selects a product as a contract item, the widget:
 1. ✅ Updates the selected product's `Is_Contract` field to `true`
 2. ✅ Sets all other products' `Is_Contract` fields to `false` (exclusive selection)
 3. ✅ Shows a success notification
@@ -18,8 +27,9 @@ This document provides a comprehensive step-by-step guide for the Zoho CRM Embed
 ## 🎯 Project Goals
 
 - **Primary**: Enable exclusive contract selection for products in Zoho CRM Deal records
-- **Secondary**: Provide automatic widget close functionality with client script communication
-- **Tertiary**: Implement data preservation and user-friendly interface
+- **Secondary**: Generate PM Request records with comprehensive deal and product data
+- **Tertiary**: Provide automatic widget close functionality with client script communication
+- **Quaternary**: Implement data preservation and user-friendly interface
 
 ## 🏗️ Architecture Overview
 

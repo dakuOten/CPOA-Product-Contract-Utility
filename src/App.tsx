@@ -1,17 +1,44 @@
-
 import './index.css'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { IoClose, IoRefresh } from 'react-icons/io5'
 import type { ZohoPageLoadData } from './types/zoho'
 import ContractProduct from './components/ContractProduct'
+import Toast from './components/Toast'
 import { updateContractProductAndClose, reloadWidget } from './utils/zohoApi'
 
 interface AppProps {
   data: ZohoPageLoadData
 }
 
+// Toast context type
+interface ToastState {
+  isVisible: boolean
+  message: string
+  type: 'success' | 'error' | 'info'
+}
+
 const App = ({ data }: AppProps) => {
   const [showRawData, setShowRawData] = useState(false)
+  
+  // Toast state management at App level
+  const [toast, setToast] = useState<ToastState>({
+    isVisible: false,
+    message: '',
+    type: 'info'
+  })
+
+  // Toast utility functions
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+    setToast({
+      isVisible: true,
+      message,
+      type
+    })
+  }, [])
+
+  const hideToast = useCallback(() => {
+    setToast(prev => ({ ...prev, isVisible: false }))
+  }, [])
 
   return (
     <div className="p-6 max-w-4xl mx-auto bg-gray-50 min-h-screen">
@@ -84,7 +111,8 @@ const App = ({ data }: AppProps) => {
 
         {/* Contract Product Management */}
         <ContractProduct 
-          dealData={data.data} 
+          dealData={data.data}
+          showToast={showToast}
         />
 
         {/* Debug Section */}
@@ -115,6 +143,14 @@ const App = ({ data }: AppProps) => {
           )}
         </div>
       </div>
+      
+      {/* Toast Notification - Rendered at App level */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   )
 }

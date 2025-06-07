@@ -25,6 +25,7 @@ export interface ZohoProductSubform {
   Pricing: number
   Total_Pricing: string
   Vendor: string | null
+  Product_Grouping?: string
 }
 
 export interface ZohoDealData {
@@ -114,8 +115,7 @@ declare global {
         on: (event: string, callback: (data: ZohoPageLoadData) => void) => void
         init: () => void
       }
-      CRM: {
-        UI: {
+      CRM: {        UI: {
           Resize: (dimensions: { height: string; width: string }) => Promise<void>
           Popup?: {
             close: () => void
@@ -134,6 +134,16 @@ declare global {
           getRecord: (options: {
             Entity: string
             RecordID: string
+          }) => Promise<{ data: unknown[]; status: string; message?: string }>
+          insertRecord: (options: {
+            Entity: string
+            APIData: Record<string, unknown>
+            Trigger?: string[]
+          }) => Promise<{ data: { code: string; details: { id: string } }[] }>
+          searchRecords: (options: {
+            Entity: string
+            Type: string
+            Query: string
           }) => Promise<{ data: unknown[]; status: string; message?: string }>
         }
       }
