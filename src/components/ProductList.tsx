@@ -6,9 +6,9 @@ interface ProductListProps {
   filteredProducts: ZohoProductSubform[]
   allProducts: ZohoProductSubform[]
   searchTerm: string
-  filterType: 'all' | 'contract' | 'main'
+  filterType: 'all' | 'contract'
   setSearchTerm: (term: string) => void
-  setFilterType: (type: 'all' | 'contract' | 'main') => void
+  setFilterType: (type: 'all' | 'contract') => void
   isUpdating: boolean
   lastUpdatedProduct: string | null
   onProductSelection: (event: React.ChangeEvent<HTMLInputElement>) => void
