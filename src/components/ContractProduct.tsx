@@ -7,7 +7,8 @@ import {
   useEffect,
   createContext, 
   startTransition,
-  useCallback
+  useCallback,
+  useTransition
 } from 'react'
 import type { ZohoDealData, ZohoProductSubform } from '../types/zoho'
 import { updateProductContractStatus, showNotification, clearAllContractSelections, closeWidget, generatePMRequest } from '../utils/zohoApi'
@@ -250,11 +251,13 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
     success: null,
     isAutoSelectionApplied: false
   }
-
   // Use React 19's useActionState for managing form actions
   const [state, productAction, isPending] = useActionState(productSelectionAction, initialState)
   const [clearState, clearAction] = useActionState(clearContractsAction, initialState)
   const [pmState, pmAction] = useActionState(generatePMRequestAction, initialState)
+
+  // Add dedicated useTransition for PM Request generation with React 19 patterns
+  const [isPMRequestPending, startPMRequestTransition] = useTransition()
 
   // Use React 19's useOptimistic for optimistic UI updates
   const [optimisticProducts, addOptimisticUpdate] = useOptimistic(
@@ -361,8 +364,7 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
       clearAction(formData)
     })
   }, [dealData.id, optimisticProducts, clearAction])
-
-  // Handle PM Request generation
+  // Handle PM Request generation with React 19 useTransition patterns
   const handleGeneratePMRequest = useCallback(() => {
     const contractProduct = optimisticProducts.find(product => product.Is_Contract)
     if (!contractProduct) {
@@ -370,20 +372,30 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
       return
     }
 
-    startTransition(() => {
-      const formData = new FormData()
-      formData.append('dealId', dealData.id)
-      formData.append('products', JSON.stringify(optimisticProducts))
-      
-      pmAction(formData)
-      
-      // Show optimistic toast
-      showToast(
-        `Creating PM Request for "${contractProduct.Products.name}"...`,
-        'info'
-      )
+    // Use React 19's useTransition for non-blocking UI updates
+    startPMRequestTransition(async () => {
+      try {
+        // Show immediate optimistic feedback
+        showToast(
+          `Creating PM Request for "${contractProduct.Products.name}"...`,
+          'info'
+        )
+        
+        // Prepare form data and execute the PM request action
+        const formData = new FormData()
+        formData.append('dealId', dealData.id)
+        formData.append('products', JSON.stringify(optimisticProducts))
+        
+        // Execute the action within the transition
+        await pmAction(formData)
+        
+      } catch (error) {
+        // Handle any errors during the transition
+        console.error('PM Request generation error:', error)
+        showToast('Failed to create PM Request', 'error')
+      }
     })
-  }, [dealData.id, optimisticProducts, pmAction, showToast])
+  }, [dealData.id, optimisticProducts, pmAction, showToast, startPMRequestTransition])
 
   const formatCurrency = useCallback((amount: string | number): string => {
     const num = typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : amount
@@ -409,10 +421,9 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
       </div>
     )
   }
-
   // Get current error state from any of the actions
   const currentError = state.error || clearState.error || pmState.error
-  const isUpdating = isPending
+  const isUpdating = isPending || isPMRequestPending
 
   return (    <ContractProvider
       products={optimisticProducts}
@@ -487,11 +498,10 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
               />
             </div>
           </div>
-        </form>
-
-        {/* Action Buttons */}
+        </form>        {/* Action Buttons */}
         <ActionButtons
           isUpdating={isUpdating}
+          isPMRequestPending={isPMRequestPending}
           hasContractProduct={hasContractProduct}
           products={optimisticProducts}
           formatCurrency={formatCurrency}

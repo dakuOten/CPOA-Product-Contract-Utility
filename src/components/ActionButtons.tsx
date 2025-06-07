@@ -2,6 +2,7 @@ import type { ZohoProductSubform } from '../types/zoho'
 
 interface ActionButtonsProps {
   isUpdating: boolean
+  isPMRequestPending: boolean
   hasContractProduct: boolean
   products: ZohoProductSubform[]
   formatCurrency: (amount: string | number) => string
