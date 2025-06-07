@@ -9,7 +9,7 @@ interface ToastProps {
   duration?: number
 }
 
-export default function Toast({ message, type, isVisible, onClose, duration = 6000 }: ToastProps) {
+function Toast({ message, type, isVisible, onClose, duration = 6000 }: ToastProps) {
   useEffect(() => {
     if (isVisible && duration > 0) {
       const timer = setTimeout(() => {
@@ -39,6 +39,7 @@ export default function Toast({ message, type, isVisible, onClose, duration = 60
     error: 'text-red-400',
     info: 'text-blue-400'
   }[type]
+
   const Icon = {
     success: () => (
       <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -56,43 +57,40 @@ export default function Toast({ message, type, isVisible, onClose, duration = 60
       </svg>
     )
   }[type]
-  // Create or get toast container - try parent window first for Zoho widgets
+
+  // Create or get toast container - positioned at top right
   const getToastContainer = () => {
-    // Try to access parent window if in iframe (Zoho widget context)
-    const targetDocument = window.parent !== window ? window.parent.document : document
-    
-    let container = targetDocument.getElementById('toast-container')
+    let container = document.getElementById('toast-container')
     if (!container) {
-      container = targetDocument.createElement('div')
+      container = document.createElement('div')
       container.id = 'toast-container'
       container.style.cssText = `
         position: fixed;
         top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
+        right: 20px;
         z-index: 999999;
         pointer-events: none;
         padding: 0;
         width: auto;
-        max-width: 90vw;
+        max-width: 400px;
+        min-width: 280px;
       `
-      targetDocument.body.appendChild(container)
+      document.body.appendChild(container)
     }
     return container
   }
+
   const toastElement = (
     <div 
       style={{ 
         position: 'relative',
-        zIndex: 1,
+        zIndex: 999999,
         pointerEvents: 'auto',
-        transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+        transform: isVisible ? 'translateY(0)' : 'translateY(-20px)',
         opacity: isVisible ? 1 : 0,
         transition: 'all 0.3s ease-in-out',
-        maxWidth: '400px',
-        width: 'auto',
-        minWidth: '280px',
-        margin: '0 auto'
+        width: '100%',
+        marginBottom: '10px'
       }}
     >
       <div 
@@ -128,14 +126,15 @@ export default function Toast({ message, type, isVisible, onClose, duration = 60
       </div>
     </div>
   )
-
   try {
-    // Try to render to parent window (Zoho main document) if possible
+    // Use current document for widget context
     const container = getToastContainer()
     return createPortal(toastElement, container)
   } catch (error) {
-    // Fallback to current document if parent access fails
-    console.warn('Could not access parent window, using local container:', error)
+    // Fallback to current document body
+    console.warn('Could not create toast container, using body:', error)
     return createPortal(toastElement, document.body)
   }
 }
+
+export default Toast
