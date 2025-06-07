@@ -96,12 +96,10 @@ export async function updateProductContractStatus(
       Trigger: ["workflow"]
     };
 
-    console.log('API Config:', JSON.stringify(apiConfig, null, 2));
-
-    // Use modern async/await with Zoho SDK
+    console.log('API Config:', JSON.stringify(apiConfig, null, 2));    // Use modern async/await with Zoho SDK
     const response = await zohoApiCall<ZohoUpdateResponse>(async () => {
       return new Promise<ZohoUpdateResponse>((resolve, reject) => {
-        window.ZOHO.CRM.API.updateRecord(apiConfig)
+        window.ZOHO!.CRM!.API!.updateRecord(apiConfig)
           .then((response: unknown) => {
             console.log('Raw Zoho API Response:', response);
             resolve(response as ZohoUpdateResponse);
@@ -111,7 +109,7 @@ export async function updateProductContractStatus(
             reject(error);
           });
       });
-    });    console.log('=== ZOHO API UPDATE SUCCESS ===');
+    });console.log('=== ZOHO API UPDATE SUCCESS ===');
     console.log('Response:', response);
     console.log('===============================');
 
@@ -142,10 +140,9 @@ export async function fetchDealData(dealId: string): Promise<ZohoApiResponse> {
   if (!window.ZOHO?.CRM?.API) {
     throw new Error('Zoho CRM API not available')
   }
-  try {
-    const response = await zohoApiCall<ZohoApiResponse>(async () => {
+  try {    const response = await zohoApiCall<ZohoApiResponse>(async () => {
       return new Promise<ZohoApiResponse>((resolve, reject) => {
-        window.ZOHO.CRM.API.getRecord({
+        window.ZOHO!.CRM!.API!.getRecord({
           Entity: "Deals",
           RecordID: dealId
         })
@@ -212,12 +209,10 @@ export async function clearAllContractSelections(
       Trigger: ["workflow"]
     };
 
-    console.log('API Config for clearing contracts:', JSON.stringify(apiConfig, null, 2));
-
-    // Use modern async/await with Zoho SDK
+    console.log('API Config for clearing contracts:', JSON.stringify(apiConfig, null, 2));    // Use modern async/await with Zoho SDK
     const response = await zohoApiCall<ZohoUpdateResponse>(async () => {
       return new Promise<ZohoUpdateResponse>((resolve, reject) => {
-        window.ZOHO.CRM.API.updateRecord(apiConfig)
+        window.ZOHO!.CRM!.API!.updateRecord(apiConfig)
           .then((response: unknown) => {
             console.log('Raw Zoho API Response (Clear Contracts):', response);
             resolve(response as ZohoUpdateResponse);
@@ -294,12 +289,10 @@ export async function updateContractProductAndClose(
       Trigger: ["workflow"]
     };
 
-    console.log('API Config for Contract_Product update:', JSON.stringify(apiConfig, null, 2));
-
-    // Update the field
+    console.log('API Config for Contract_Product update:', JSON.stringify(apiConfig, null, 2));    // Update the field
     const response = await zohoApiCall<ZohoUpdateResponse>(async () => {
       return new Promise<ZohoUpdateResponse>((resolve, reject) => {
-        window.ZOHO.CRM.API.updateRecord(apiConfig)
+        window.ZOHO!.CRM!.API!.updateRecord(apiConfig)
           .then((response: unknown) => {
             console.log('Contract_Product update response:', response);
             resolve(response as ZohoUpdateResponse);
@@ -454,14 +447,13 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
   console.log('Deal ID:', dealId)
   console.log('API: ZOHO.CRM.API.insertRecord')
   
-  try {
-    // Step 1: Get Deal record with all required data
+  try {    // Step 1: Get Deal record with all required data
     console.log('Step 1: Fetching deal record...')
     const dealResponse = await zohoApiCall(async () => {
-      return await window.ZOHO.CRM.API.getRecord({
+      return await window.ZOHO!.CRM!.API!.getRecord({
         Entity: 'Deals',
         RecordID: dealId
-      })
+      }) as ZohoApiResponse
     })
     
     if (!dealResponse.data || dealResponse.data.length === 0) {
@@ -469,7 +461,7 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
     }
     
     const dealData = dealResponse.data[0] as ZohoDealRecord
-    console.log('Deal data retrieved:', dealData)    // Step 2: Get contact information from deal record
+    console.log('Deal data retrieved:', dealData)// Step 2: Get contact information from deal record
     console.log('Step 2: Extracting contact info from deal...')
     let primaryContactEmail = ''  // Use empty string instead of 'N/A' for email validation
     let primaryContactPhone = ''  // Use empty string instead of '0' 
@@ -480,13 +472,12 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       if (dealData.Contact_Name && 
           typeof dealData.Contact_Name === 'object' && 
           'id' in dealData.Contact_Name && 
-          dealData.Contact_Name.id) {
-        console.log('Found contact reference in deal, fetching contact details...')
+          dealData.Contact_Name.id) {        console.log('Found contact reference in deal, fetching contact details...')
         const contactResponse = await zohoApiCall(async () => {
-          return await window.ZOHO.CRM.API.getRecord({
+          return await window.ZOHO!.CRM!.API!.getRecord({
             Entity: 'Contacts',
             RecordID: (dealData.Contact_Name as { id: string }).id
-          })
+          }) as ZohoApiResponse
         })
           if (contactResponse.data && contactResponse.data.length > 0) {
           const contact = contactResponse.data[0] as ZohoContact
@@ -498,14 +489,13 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       } else if (dealData.Account_Name && 
                  typeof dealData.Account_Name === 'object' && 
                  'id' in dealData.Account_Name && 
-                 dealData.Account_Name.id) {
-        console.log('No direct contact found, trying to get account primary contact...')
+                 dealData.Account_Name.id) {        console.log('No direct contact found, trying to get account primary contact...')
         // Try to get account record and use its primary contact
         const accountResponse = await zohoApiCall(async () => {
-          return await window.ZOHO.CRM.API.getRecord({
+          return await window.ZOHO!.CRM!.API!.getRecord({
             Entity: 'Accounts',
             RecordID: (dealData.Account_Name as { id: string }).id
-          })
+          }) as ZohoApiResponse
         })
         
         if (accountResponse.data && accountResponse.data.length > 0) {
@@ -515,12 +505,11 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
               typeof account.Primary_Contact === 'object' && 
               account.Primary_Contact !== null &&
               'id' in account.Primary_Contact &&
-              (account.Primary_Contact as { id: string }).id) {
-            const contactResponse = await zohoApiCall(async () => {
-              return await window.ZOHO.CRM.API.getRecord({
+              (account.Primary_Contact as { id: string }).id) {            const contactResponse = await zohoApiCall(async () => {
+              return await window.ZOHO!.CRM!.API!.getRecord({
                 Entity: 'Contacts',
                 RecordID: (account.Primary_Contact as { id: string }).id
-              })
+              }) as ZohoApiResponse
             })
               if (contactResponse.data && contactResponse.data.length > 0) {
               const contact = contactResponse.data[0] as ZohoContact
@@ -668,14 +657,13 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
     }
     
     console.log('PM Request data to be created:', pmRequestData)
-    
-    // Insert the PM Request record
+      // Insert the PM Request record
     const insertResponse = await zohoApiCall(async () => {
-      return await window.ZOHO.CRM.API.insertRecord({
+      return await window.ZOHO!.CRM!.API!.insertRecord({
         Entity: 'PM_REQUEST',
         APIData: pmRequestData,
         Trigger: ['approval', 'workflow', 'blueprint']
-      })
+      }) as { data: { code: string; details: { id: string } }[] }
     })
     
     console.log('=== PM REQUEST CREATED SUCCESSFULLY ===')

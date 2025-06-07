@@ -433,13 +433,8 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
       setFilterType={updateFilter}
       formatCurrency={formatCurrency}
     >
-      <div className="space-y-2">
-        {/* Deal Header */}
-        <DealHeader 
-          dealData={dealData} 
-          productsCount={optimisticProducts.length} 
-          formatCurrency={formatCurrency}
-        />
+      <div className="space-y-2">        {/* Deal Header */}
+        <DealHeader />
 
         {/* Loading State */}
         {isUpdating && (
@@ -457,21 +452,42 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
             e.stopPropagation()
           }}
         >
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900 flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+          <div className="modern-card">
+            {/* Header with Product Count and Filters */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-emerald-100 rounded-lg">
+                    <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
                     </svg>
-                    <span>Products ({optimisticProducts.length})</span>
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Select a product to tag as the contract item. This will update the Zoho CRM record immediately.
-                  </p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Product Selection
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      Select a product to designate as the contract item
+                    </p>
+                  </div>
                 </div>
-              </div>              {/* Product Filters */}
+                <div className="flex items-center space-x-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-900">{optimisticProducts.length}</div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Products</div>
+                  </div>
+                  {hasContractProduct && (
+                    <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-100 rounded-lg">
+                      <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-medium text-emerald-700">Contract Selected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Filters */}
               <ProductFilters
                 searchTerm={searchTerm}
                 setSearchTerm={updateSearch}
@@ -483,8 +499,9 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
               />
             </div>
 
-            {/* Product List */}
-            <div className="divide-y divide-gray-200">              <ProductList
+            {/* Professional Product Table */}
+            <div className="overflow-x-auto">
+              <ProductList
                 filteredProducts={filteredProducts}
                 allProducts={optimisticProducts}
                 searchTerm={searchTerm}
@@ -498,13 +515,10 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
               />
             </div>
           </div>
-        </form>        {/* Action Buttons */}
-        <ActionButtons
+        </form>        {/* Action Buttons */}        <ActionButtons
           isUpdating={isUpdating}
           isPMRequestPending={isPMRequestPending}
           hasContractProduct={hasContractProduct}
-          products={optimisticProducts}
-          formatCurrency={formatCurrency}
           onCloseAndClear={handleCloseAndClear}
           onGeneratePMRequest={handleGeneratePMRequest}
         />

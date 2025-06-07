@@ -110,52 +110,38 @@ export interface ZohoPageLoadData {
 // Zoho SDK global interface
 declare global {
   interface Window {
-    ZOHO: {
-      embeddedApp: {
+    ZOHO?: {
+      CRM?: {
+        CONFIG?: {
+          getCurrentUser?: () => Promise<unknown>
+        }
+        API?: {
+          getRecord: (config: Record<string, unknown>) => Promise<unknown>
+          updateRecord: (config: Record<string, unknown>) => Promise<unknown>
+          insertRecord: (config: Record<string, unknown>) => Promise<unknown>
+        }
+        UI?: {
+          Popup?: {
+            close?: () => void
+            closeReload?: () => void
+          }
+          Record?: {
+            refresh?: () => void
+          }
+        }
+      }
+      embeddedApp?: {
         on: (event: string, callback: (data: ZohoPageLoadData) => void) => void
         init: () => void
       }
-      CRM: {        UI: {
-          Resize: (dimensions: { height: string; width: string }) => Promise<void>
-          Popup?: {
-            close: () => void
-            closeReload?: () => void
-          }
-        }
-        API: {
-          updateRecord: (options: {
-            Entity: string
-            APIData: {
-              id: string
-              [key: string]: unknown
-            }
-            Trigger?: string[]
-          }) => Promise<{ data: { code: string; details: { id: string } }[] }>
-          getRecord: (options: {
-            Entity: string
-            RecordID: string
-          }) => Promise<{ data: unknown[]; status: string; message?: string }>
-          insertRecord: (options: {
-            Entity: string
-            APIData: Record<string, unknown>
-            Trigger?: string[]
-          }) => Promise<{ data: { code: string; details: { id: string } }[] }>
-          searchRecords: (options: {
-            Entity: string
-            Type: string
-            Query: string
-          }) => Promise<{ data: unknown[]; status: string; message?: string }>
-        }
-      }
-    }
-    $Client?: {
-      close: (options: { exit: boolean }) => void
     }
   }
-  
-  // Global $Client variable (can be used without window. prefix)
+
+  // $Client API for widget communication
   const $Client: {
-    close: (options: { exit: boolean }) => void
+    close: (options?: { exit?: boolean }) => void
+    on: (event: string, callback: (data: unknown) => void) => void
+    trigger: (event: string, data?: unknown) => void
   }
 }
 
