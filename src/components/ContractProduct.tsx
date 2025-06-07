@@ -2,240 +2,27 @@ import {
   useActionState, 
   useOptimistic, 
   useMemo, 
-  useRef, 
   useState,
   useEffect,
-  createContext, 
   startTransition,
   useCallback,
   useTransition
 } from 'react'
 import type { ZohoDealData, ZohoProductSubform } from '../types/zoho'
-import { updateProductContractStatus, showNotification, clearAllContractSelections, closeWidget, generatePMRequest } from '../utils/zohoApi'
+import { ContractProvider } from '../contexts/ContractContext'
+import { 
+  productSelectionAction, 
+  clearContractsAction, 
+  generatePMRequestAction,
+  type ContractActionState 
+} from '../hooks/contractActions'
+import { useContractCleanup } from '../hooks/contractHooks'
 import DealHeader from './DealHeader'
 import LoadingState from './LoadingState'
 import ErrorState from './ErrorState'
 import ProductFilters from './ProductFilters'
 import ProductList from './ProductList'
 import ActionButtons from './ActionButtons'
-
-// Contract Context for sharing state between components
-const ContractContext = createContext<{
-  products: ZohoProductSubform[]
-  searchTerm: string
-  filterType: 'all' | 'contract'
-  setSearchTerm: (term: string) => void
-  setFilterType: (type: 'all' | 'contract') => void
-  formatCurrency: (amount: string | number) => string
-} | null>(null)
-
-// Types for our action state
-interface ContractActionState {
-  products: ZohoProductSubform[]
-  lastUpdatedProduct: string | null
-  error: string | null
-  success: string | null
-  isAutoSelectionApplied: boolean
-}
-
-// Action functions for form actions
-async function productSelectionAction(
-  currentState: ContractActionState,
-  formData: FormData
-): Promise<ContractActionState> {
-  const dealId = formData.get('dealId') as string
-  const productIndex = parseInt(formData.get('productIndex') as string)
-  const productsData = formData.get('products') as string
-  const products: ZohoProductSubform[] = JSON.parse(productsData)
-  
-  try {
-    const selectedProduct = products[productIndex]
-    
-    // Call Zoho API to update the product
-    await updateProductContractStatus(
-      dealId,
-      productIndex,
-      selectedProduct,
-      products
-    )
-
-    // Update products with new contract status
-    const updatedProducts = products.map((product, index) => ({
-      ...product,
-      Is_Contract: index === productIndex
-    }))
-
-    // Show success notification
-    showNotification(
-      `Successfully tagged "${selectedProduct.Products.name}" as the contract item.`,
-      'success'
-    )
-
-    return {
-      ...currentState,
-      products: updatedProducts,
-      lastUpdatedProduct: selectedProduct.Products.id,
-      error: null,
-      success: `Product "${selectedProduct.Products.name}" selected as contract item`
-    }
-  } catch (error) {
-    const errorMessage = `Failed to update contract status: ${error instanceof Error ? error.message : 'Unknown error'}`
-    
-    showNotification('Failed to tag product as contract item', 'error')
-    
-    return {
-      ...currentState,
-      error: errorMessage,
-      success: null
-    }
-  }
-}
-
-async function clearContractsAction(
-  currentState: ContractActionState,
-  formData: FormData
-): Promise<ContractActionState> {
-  const dealId = formData.get('dealId') as string
-  const productsData = formData.get('products') as string
-  const products: ZohoProductSubform[] = JSON.parse(productsData)
-  
-  try {
-    await clearAllContractSelections(dealId, products)
-    
-    const updatedProducts = products.map(product => ({
-      ...product,
-      Is_Contract: false
-    }))
-    
-    closeWidget('Contract selections cleared successfully - closing widget')
-    
-    return {
-      ...currentState,
-      products: updatedProducts,
-      error: null,
-      success: 'All contract selections cleared'
-    }
-  } catch (error) {
-    const errorMessage = `Failed to clear contract selections: ${error instanceof Error ? error.message : 'Unknown error'}`
-    closeWidget('Manual close with error - notifying client script')
-    
-    return {
-      ...currentState,
-      error: errorMessage,
-      success: null
-    }
-  }
-}
-
-async function generatePMRequestAction(
-  currentState: ContractActionState,
-  formData: FormData
-): Promise<ContractActionState> {
-  const dealId = formData.get('dealId') as string
-  const productsData = formData.get('products') as string
-  const products: ZohoProductSubform[] = JSON.parse(productsData)
-  
-  const contractProduct = products.find(product => product.Is_Contract)
-  if (!contractProduct) {
-    return {
-      ...currentState,
-      error: 'No contract product selected. Please select a product first.',
-      success: null
-    }
-  }
-
-  try {
-    await generatePMRequest(dealId)
-    
-    showNotification(
-      `PM Request created successfully for "${contractProduct.Products.name}"`,
-      'success'
-    )
-    
-    return {
-      ...currentState,
-      error: null,
-      success: `PM Request created for "${contractProduct.Products.name}"`
-    }
-  } catch (error) {
-    const errorMessage = `Failed to create PM Request: ${error instanceof Error ? error.message : 'Unknown error'}`
-    
-    showNotification('Failed to create PM Request', 'error')
-    
-    return {
-      ...currentState,
-      error: errorMessage,
-      success: null
-    }
-  }
-}
-
-// Custom hook for cleanup logic using React 19 patterns
-function useContractCleanup(products: ZohoProductSubform[], dealId: string) {
-  const cleanupRef = useRef<(() => Promise<void>) | undefined>(undefined)
-  
-  cleanupRef.current = useCallback(async () => {
-    try {
-      if (products.length > 0 && dealId) {
-        await clearAllContractSelections(dealId, products)
-      }
-      closeWidget('Widget cleanup completed - notifying client script')
-    } catch (error) {
-      console.error('Failed to clear contract selections on widget close:', error)
-      closeWidget('Widget closing with error - notifying client script')
-    }
-  }, [products, dealId])
-  
-  // Set up cleanup listeners only once
-  if (typeof window !== 'undefined' && !window.__contractWidgetCleanupSet) {
-    window.__contractWidgetCleanupSet = true
-    
-    const handleBeforeUnload = () => {
-      cleanupRef.current?.()
-    }
-    
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    window.__contractWidgetCleanup = async () => {
-      if (cleanupRef.current) {
-        await cleanupRef.current()
-      }
-    }
-  }
-}
-
-// Context provider component
-function ContractProvider({ children, products, searchTerm, filterType, setSearchTerm, setFilterType, formatCurrency }: {
-  children: React.ReactNode
-  products: ZohoProductSubform[]
-  searchTerm: string
-  filterType: 'all' | 'contract'
-  setSearchTerm: (term: string) => void
-  setFilterType: (type: 'all' | 'contract') => void
-  formatCurrency: (amount: string | number) => string
-}) {
-  const contextValue = useMemo(() => ({
-    products,
-    searchTerm,
-    filterType,
-    setSearchTerm,
-    setFilterType,
-    formatCurrency
-  }), [products, searchTerm, filterType, setSearchTerm, setFilterType, formatCurrency])
-
-  return (
-    <ContractContext value={contextValue}>
-      {children}
-    </ContractContext>
-  )
-}
-
-// Extend Window interface for our cleanup functions
-declare global {
-  interface Window {
-    __contractWidgetCleanupSet?: boolean
-    __contractWidgetCleanup?: () => Promise<void>
-  }
-}
 
 interface ContractProductProps {
   dealData: ZohoDealData
