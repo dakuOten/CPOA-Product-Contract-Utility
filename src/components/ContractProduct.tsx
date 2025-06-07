@@ -23,18 +23,19 @@ function useProductState(initialData: ZohoDealData) {
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [lastUpdatedProduct, setLastUpdatedProduct] = useState<string | null>(null)
   const autoSelectionRef = useRef(false)
+  const manualSelectionRef = useRef(false) // Track manual interactions
   
   // Update products when dealData changes (replacing useEffect)
   if (initialData.Subform_1 !== products && !isUpdating) {
     setProducts(initialData.Subform_1 || [])
   }
-  
-  // Auto-selection logic moved to a function that can be called imperatively
+    // Auto-selection logic moved to a function that can be called imperatively
   const handleAutoSelection = useCallback(async (dealId: string) => {
     if (
       products.length === 1 && 
       !products[0].Is_Contract && 
       !autoSelectionRef.current && 
+      !manualSelectionRef.current && // Prevent auto-selection if user has manually interacted
       !isUpdating &&
       dealId
     ) {
@@ -69,6 +70,11 @@ function useProductState(initialData: ZohoDealData) {
     }
   }, [products, isUpdating])
   
+  // Function to mark manual selection
+  const markManualSelection = useCallback(() => {
+    manualSelectionRef.current = true
+  }, [])
+  
   return {
     products,
     setProducts,
@@ -78,7 +84,8 @@ function useProductState(initialData: ZohoDealData) {
     setUpdateError,
     lastUpdatedProduct,
     setLastUpdatedProduct,
-    handleAutoSelection
+    handleAutoSelection,
+    markManualSelection
   }
 }
 
@@ -121,8 +128,7 @@ interface ContractProductProps {
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function ContractProduct({ dealData, showToast }: ContractProductProps) {
-  // Use custom hooks for state management
+export default function ContractProduct({ dealData, showToast }: ContractProductProps) {  // Use custom hooks for state management
   const {
     products,
     setProducts,
@@ -132,19 +138,28 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
     setUpdateError,
     lastUpdatedProduct,
     setLastUpdatedProduct,
-    handleAutoSelection
+    handleAutoSelection,
+    markManualSelection
   } = useProductState(dealData)
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'contract' | 'main'>('all')
-  
-  // Use cleanup hook
+    // Use cleanup hook
   useCleanup(products, dealData.id)
   
-  // Call auto-selection when appropriate (replacing useEffect)
-  if (products.length === 1 && !products[0].Is_Contract && !isUpdating) {
-    handleAutoSelection(dealData.id)
-  }  // Check if there's a contract product selected
+  // Call auto-selection when appropriate but only if no manual interaction has occurred
+  // This prevents auto-selection from interfering with manual selection
+  const shouldAutoSelect = products.length === 1 && 
+    !products[0].Is_Contract && 
+    !isUpdating &&
+    !products.some(p => p.Is_Contract) // No product is already selected
+  
+  if (shouldAutoSelect) {
+    // Use a microtask to avoid state update during render
+    Promise.resolve().then(() => {
+      handleAutoSelection(dealData.id)
+    })
+  }// Check if there's a contract product selected
   const hasContractProduct = useMemo(() => {
     return products.some(product => product.Is_Contract)
   }, [products])
@@ -164,8 +179,10 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
       return matchesSearch && matchesFilter
     })
   }, [products, searchTerm, filterType])
-
   const handleProductSelection = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Mark that user has manually interacted to prevent auto-selection
+    markManualSelection()
+    
     // Prevent default form submission behavior and stop event propagation
     event.preventDefault()
     event.stopPropagation()
@@ -224,7 +241,7 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
         setIsUpdating(false)
       }
     }
-  }, [dealData.id, products, setUpdateError, setIsUpdating, setProducts, setLastUpdatedProduct])
+  }, [dealData.id, products, setUpdateError, setIsUpdating, setProducts, setLastUpdatedProduct, markManualSelection])
   
   // Handle manual close and clear action
   const handleCloseAndClear = useCallback(async () => {
