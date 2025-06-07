@@ -290,12 +290,11 @@ export default function ContractProduct({ dealData }: ContractProductProps) {
                           isUpdating ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       />
-                        <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 break-words">
+                        <div className="flex-1 min-w-0">                        <h4 className="font-medium text-gray-900 break-words">
                           {product.Products.name}
                         </h4>
                         <p className="text-sm text-gray-600 break-words">
-                          {product.Product_Type2}
+                          {product.Product_Type}
                         </p>
                       </div>
                     </div>                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4 text-sm">

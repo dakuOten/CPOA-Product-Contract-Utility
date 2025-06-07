@@ -19,7 +19,7 @@ export interface ZohoProductSubform {
   Is_Contract: boolean
   Main_Product: boolean
   Products: ZohoProduct
-  Product_Type2: string
+  Product_Type: string
   Quantity: number
   Terms: string
   Pricing: number

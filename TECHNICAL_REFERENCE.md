@@ -180,7 +180,7 @@ interface ZohoProductSubform {
   Terms: string;                  // Contract terms
   Pricing: string;                // Unit price
   Total_Pricing: string;          // Total line price
-  Product_Type2: string;          // Product category
+  Product_Type: string;          // Product category
 }
 
 // Product reference data

@@ -312,7 +312,7 @@ export default function ContractProduct({ dealData }: ContractProductProps) {
                   
                   <div>
                     <h4 className="font-medium">{product.Products.name}</h4>
-                    <p className="text-sm text-gray-600">{product.Product_Type2}</p>
+                    <p className="text-sm text-gray-600">{product.Product_Type}</p>
                   </div>
                 </div>
                 
