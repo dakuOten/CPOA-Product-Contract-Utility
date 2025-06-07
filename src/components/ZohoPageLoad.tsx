@@ -30,7 +30,9 @@ export default function ZohoPageLoad() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">PM Request Contract - Zoho EmbeddedApp</h1>      <div className="mb-4">
+      <h1 className="text-2xl font-bold mb-4">PM Request Contract - Zoho EmbeddedApp</h1>
+      
+      <div className="mb-4">
         <span className={`px-2 py-1 rounded text-sm ${
           isInitialized ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
         }`}>
