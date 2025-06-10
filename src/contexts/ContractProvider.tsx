@@ -20,6 +20,8 @@ export function ContractProvider({
   setFilterType: (type: 'all' | 'contract') => void
   formatCurrency: (amount: string | number) => string
 }) {
+
+  
   const contextValue = useMemo(() => ({
     products,
     searchTerm,

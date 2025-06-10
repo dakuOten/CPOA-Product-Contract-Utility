@@ -65,16 +65,15 @@ declare global {
           }
           Record?: {
             refresh?(): void
-          }
-        }
+          }        }
         API?: {
-          searchRecords?(options: ZohoSearchOptions): Promise<ZohoAPIResponse>
-          updateRecord?(options: ZohoUpdateOptions): Promise<ZohoAPIResponse>
-          insertRecord?(options: ZohoInsertOptions): Promise<ZohoAPIResponse>
-          getRecord?(options: ZohoGetOptions): Promise<ZohoAPIResponse>
+          searchRecords?(options: ZohoSearchOptions): Promise<unknown>
+          updateRecord?(options: ZohoUpdateOptions): Promise<unknown>
+          insertRecord?(options: ZohoInsertOptions): Promise<unknown>
+          getRecord?(options: ZohoGetOptions): Promise<unknown>
         }
         CONNECTION?: {
-          invoke?(connectionName: string, options: ZohoConnectionOptions): Promise<ZohoAPIResponse>
+          invoke?(connectionName: string, options: ZohoConnectionOptions): Promise<unknown>
         }
       }
     }

@@ -1,10 +1,13 @@
 // Zoho CRM Types for Contract Product functionality
 
+// Users Types 
 export interface ZohoUser {
   name: string
   id: string
 }
 
+
+// Accounts Types 
 export interface ZohoAccount {
   name: string
   id: string

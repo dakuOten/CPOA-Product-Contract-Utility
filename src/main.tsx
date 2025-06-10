@@ -28,7 +28,7 @@ function initializeZohoApp(): void {
       const zohoUI = window.ZOHO?.CRM?.UI
       if (zohoUI && 'Resize' in zohoUI && typeof zohoUI.Resize === 'function') {
         zohoUI.Resize({ 
-          height: "600", 
+          height: "1000", 
           width: "800" 
         }).then(function () {
           renderApp(pageLoadData)
