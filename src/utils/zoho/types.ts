@@ -135,4 +135,5 @@ export interface PMRequestData extends Record<string, unknown> {
   Are_we_Moving_TNs: boolean
   Contract_ID_Number_ADIVB_Number: string
   Sub_Account_ID: string
+  Status : string
 }

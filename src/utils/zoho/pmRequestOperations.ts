@@ -239,7 +239,8 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       Circuit_ID: circuitId,      Current_MRC: mrcTotal,
       Are_we_Moving_TNs: movingTns,
       Contract_ID_Number_ADIVB_Number: contractIdNumber,
-      Sub_Account_ID: subAccountId
+      Sub_Account_ID: subAccountId,
+      Status : "Pending"
     }
     
     console.log('PM Request data to be created:', pmRequestData)
