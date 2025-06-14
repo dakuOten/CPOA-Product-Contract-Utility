@@ -275,8 +275,7 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       // Helper function to check if a field is empty or null
       const isFieldEmpty = (value: string | undefined | null): boolean => {
         return !value || value.toString().trim() === ''
-      }
-        // BASIC REQUIRED FIELDS (Always required for PM Request generation)
+      }      // BASIC REQUIRED FIELDS (Always required for PM Request generation)
       console.log('📋 Checking basic required fields...')
       if (isFieldEmpty(dealData.Description)) {
         missingFields.push('Description')
@@ -292,11 +291,19 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
         console.log('✅ Found: Current Services =', dealData.Curent_Services)
       }
       
-      if (isFieldEmpty(dealData.Circuit_Id)) {
-        missingFields.push('Circuit ID')
-        console.log('❌ Missing: Circuit ID')
+      // Circuit ID - Special rule: NOT required for AT&T Complex with standard terms (12, 24, 36, MTM)
+      const isATTComplexStandardTerms = (normalizedProductType === 'AT&T Complex' || normalizedProductType === 'AT&T-Complex') && 
+                                       ['12', '24', '36', 'MTM'].includes(normalizedTerm)
+      
+      if (isATTComplexStandardTerms) {
+        console.log('⚠️  Circuit ID NOT required for AT&T Complex with standard terms')
       } else {
-        console.log('✅ Found: Circuit ID =', dealData.Circuit_Id)
+        if (isFieldEmpty(dealData.Circuit_Id)) {
+          missingFields.push('Circuit ID')
+          console.log('❌ Missing: Circuit ID')
+        } else {
+          console.log('✅ Found: Circuit ID =', dealData.Circuit_Id)
+        }
       }
       
       // PRODUCT-SPECIFIC REQUIRED FIELDS
