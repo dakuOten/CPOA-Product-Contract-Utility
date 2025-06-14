@@ -23,9 +23,10 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
     if (!dealResponse.data || dealResponse.data.length === 0) {
       throw new Error(`Deal with ID ${dealId} not found`)
     }
+      const dealData = dealResponse.data[0] as ZohoDealRecord
+    console.log('Deal data retrieved:', dealData)
     
-    const dealData = dealResponse.data[0] as ZohoDealRecord
-    console.log('Deal data retrieved:', dealData)    // Step 2: Get contact information from deal record using Contact Roles (like Zoho function)
+    // Step 2: Get contact information from deal record using Contact Roles (like Zoho function)
     console.log('Step 2: Finding Primary Contact via Contact Roles...')
     let primaryContactEmail = ''
     let primaryContactPhone = ''
@@ -131,33 +132,45 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       const accComplex = ['12', '24', '36', 'MTM']
       const accComplexRenewal = ['12-Renewal', '24-Renewal', '36-Renewal', '42-Renewal']
       let selectedGroupMCR = ''
-      
-      for (const product of products) {
-        if (product.Is_Contract === true) {
+        for (const product of products) {        if (product.Is_Contract === true) {
           const productType = product.Product_Type || ''
           const terms = product.Terms || ''
           
-          if ((productType === 'ACC-Complex' || productType === 'AT&T Complex') && accComplex.includes(terms)) {
-            contractProductType = productType.replace('-', ' ')
-            contractTerm = terms.replace('-', ' ')
+          // Normalize product type for comparison (handle both ACC-Complex and ACC Complex formats)
+          const normalizedProductType = productType.replace(/-/g, ' ').trim()
+          
+          console.log('Processing contract product:', { 
+            originalProductType: productType, 
+            normalizedProductType, 
+            terms,
+            accComplex,
+            accComplexRenewal 
+          })
+          
+          if ((normalizedProductType === 'ACC Complex' || normalizedProductType === 'AT&T Complex') && accComplex.includes(terms)) {
+            contractProductType = productType
+            contractTerm = terms
             selectedGroupMCR = product.Product_Grouping || ''
             movingTns = dealData.Porting_Moving_TNs || false
             dataHandOff = dealData.Data_Interface_Type || ''
             circuitId = dealData.Circuit_Id || ''
             subAccountId = dealData.Sub_Account_ID || ''
+            console.log('✅ Matched ACC/AT&T Complex with standard terms:', { contractProductType, contractTerm })
             break
-          } else if ((productType === 'ACC-Complex' || productType === 'AT&T Complex') && accComplexRenewal.includes(terms)) {
-            contractProductType = productType.replace('-', ' ')
-            contractTerm = terms.replace('-', ' ')
+          } else if ((normalizedProductType === 'ACC Complex' || normalizedProductType === 'AT&T Complex') && accComplexRenewal.includes(terms)) {
+            contractProductType = productType
+            contractTerm = terms
             selectedGroupMCR = product.Product_Grouping || ''
             circuitId = dealData.Circuit_Id || ''
             contractIdNumber = dealData.Contract_ID_ADIVB_Number || ''
             subAccountId = dealData.Sub_Account_ID || ''
+            console.log('✅ Matched ACC/AT&T Complex with renewal terms:', { contractProductType, contractTerm })
             break
           } else {
             selectedGroupMCR = product.Product_Grouping || ''
             contractProductType = productType
             contractTerm = terms
+            console.log('✅ Matched other product type:', { contractProductType, contractTerm })
             break
           }
         }
@@ -165,20 +178,48 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       
       // Calculate MRC total for the selected product group
       for (const product of products) {
-        if (product.Product_Grouping === selectedGroupMCR) {
-          const totalPricing = typeof product.Total_Pricing === 'string' 
+        if (product.Product_Grouping === selectedGroupMCR) {          const totalPricing = typeof product.Total_Pricing === 'string' 
             ? parseFloat(product.Total_Pricing.replace(/,/g, '')) 
             : product.Total_Pricing
           mrcTotal += totalPricing || 0
         }
-      }
-    } else if (products.length === 1) {
+      }    } else if (products.length === 1) {
       // Single product - use it directly
       contractProductType = products[0].Product_Type || ''
       contractTerm = products[0].Terms || ''
+      
+      // Set all the required fields for single product
+      movingTns = dealData.Porting_Moving_TNs || false
+      dataHandOff = dealData.Data_Interface_Type || ''
+      circuitId = dealData.Circuit_Id || ''
+      contractIdNumber = dealData.Contract_ID_ADIVB_Number || ''
+      subAccountId = dealData.Sub_Account_ID || ''
+      
+      // Calculate MRC for single product
+      const totalPricing = typeof products[0].Total_Pricing === 'string' 
+        ? parseFloat(products[0].Total_Pricing.replace(/,/g, ''))
+        : products[0].Total_Pricing
+      mrcTotal = totalPricing || 0
+      
+      console.log('✅ Single product configuration:', { 
+        contractProductType, 
+        contractTerm, 
+        mrcTotal,
+        dataHandOff,
+        circuitId,
+        contractIdNumber 
+      })
     }
     
+    // Handle Account_Name which can be either string or object - use the name, not the ID
+    const companyName = dealData.Account_Name && 
+                       typeof dealData.Account_Name === 'object' && 
+                       'name' in dealData.Account_Name
+      ? (dealData.Account_Name as { name: string }).name 
+      : (typeof dealData.Account_Name === 'string' ? dealData.Account_Name : '')
+    
     console.log('Contract product details:', { contractProductType, contractTerm, mrcTotal })
+    console.log('Account Name details:', { Account_Name: dealData.Account_Name, companyName })
     
     // Step 4: Build addresses
     const serviceAddress = [
@@ -197,12 +238,6 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
     
     // Step 5: Create PM Request record
     console.log('Step 5: Creating PM Request record...')
-    // Handle Account_Name which can be either string or object
-    const companyName = dealData.Account_Name && 
-                       typeof dealData.Account_Name === 'object' && 
-                       'id' in dealData.Account_Name
-      ? (dealData.Account_Name as { id: string }).id 
-      : dealData.Account_Name || ''
     
     // Validate email format - only include if it's a valid email
     const isValidEmail = (email: string): boolean => {
@@ -216,8 +251,164 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       originalEmail: primaryContactEmail, 
       validatedEmail, 
       isValid: isValidEmail(primaryContactEmail) 
-    })
+    })    // Step 5.5: Validate required fields based on Product Type and Term combinations
+    console.log('Step 5.5: Validating required fields based on product configuration...')
+    const validateRequiredFieldsForPMRequest = (productType: string, term: string, dealData: ZohoDealRecord): string[] => {
+      const missingFields: string[] = []
+      const normalizedProductType = productType.replace(/-/g, ' ').trim()
+      const normalizedTerm = term.replace(/-/g, ' ').trim()
+      
+      console.log('Validation for:', { 
+        originalProductType: productType,
+        normalizedProductType, 
+        originalTerm: term,
+        normalizedTerm,
+        dealDataFields: {
+          Description: dealData.Description,
+          Curent_Services: dealData.Curent_Services,
+          Circuit_Id: dealData.Circuit_Id,
+          Data_Interface_Type: dealData.Data_Interface_Type,
+          Contract_ID_ADIVB_Number: dealData.Contract_ID_ADIVB_Number
+        }
+      })
+      
+      // Helper function to check if a field is empty or null
+      const isFieldEmpty = (value: string | undefined | null): boolean => {
+        return !value || value.toString().trim() === ''
+      }
+        // BASIC REQUIRED FIELDS (Always required for PM Request generation)
+      console.log('📋 Checking basic required fields...')
+      if (isFieldEmpty(dealData.Description)) {
+        missingFields.push('Description')
+        console.log('❌ Missing: Description')
+      } else {
+        console.log('✅ Found: Description =', dealData.Description)
+      }
+      
+      if (isFieldEmpty(dealData.Curent_Services)) {
+        missingFields.push('Current Services')
+        console.log('❌ Missing: Current Services')
+      } else {
+        console.log('✅ Found: Current Services =', dealData.Curent_Services)
+      }
+      
+      if (isFieldEmpty(dealData.Circuit_Id)) {
+        missingFields.push('Circuit ID')
+        console.log('❌ Missing: Circuit ID')
+      } else {
+        console.log('✅ Found: Circuit ID =', dealData.Circuit_Id)
+      }
+      
+      // PRODUCT-SPECIFIC REQUIRED FIELDS
+      console.log('📋 Checking product-specific required fields...')
+      
+      // Debug: Show exact comparison values
+      console.log('🔍 Debug - Comparison Values:', {
+        normalizedProductType,
+        normalizedTerm,
+        isATTComplex: normalizedProductType === 'AT&T Complex',
+        isACCComplex: normalizedProductType === 'ACC Complex',
+        isStandardTerm: ['12', '24', '36', 'MTM'].includes(normalizedTerm),
+        isRenewalTerm: ['12 Renewal', '24 Renewal', '36 Renewal'].includes(normalizedTerm),
+        availableStandardTerms: ['12', '24', '36', 'MTM'],
+        availableRenewalTerms: ['12 Renewal', '24 Renewal', '36 Renewal']
+      })
+        // AT&T Complex with 12, 24, 36, MTM - Requested Data Hand-Off is required
+      if ((normalizedProductType === 'AT&T Complex' || normalizedProductType === 'AT&T-Complex') && ['12', '24', '36', 'MTM'].includes(normalizedTerm)) {
+        console.log('📋 ✅ CONDITION MATCHED: AT&T Complex with standard terms...')
+        if (isFieldEmpty(dealData.Data_Interface_Type)) {
+          missingFields.push('Requested Data Hand-Off')
+          console.log('❌ Missing: Requested Data Hand-Off')
+        } else {
+          console.log('✅ Found: Requested Data Hand-Off =', dealData.Data_Interface_Type)
+        }
+      } else {
+        console.log('📋 ❌ Condition NOT matched for AT&T Complex with standard terms', {
+          productMatch: normalizedProductType === 'AT&T Complex' || normalizedProductType === 'AT&T-Complex',
+          termMatch: ['12', '24', '36', 'MTM'].includes(normalizedTerm),
+          actualProduct: normalizedProductType,
+          actualTerm: normalizedTerm
+        })
+      }
+      
+      // ACC Complex with 12, 24, 36, MTM - Requested Data Hand-Off is required (Circuit ID already checked above)
+      if ((normalizedProductType === 'ACC Complex' || normalizedProductType === 'ACC-Complex') && ['12', '24', '36', 'MTM'].includes(normalizedTerm)) {
+        console.log('📋 ✅ CONDITION MATCHED: ACC Complex with standard terms...')
+        if (isFieldEmpty(dealData.Data_Interface_Type)) {
+          missingFields.push('Requested Data Hand-Off')
+          console.log('❌ Missing: Requested Data Hand-Off')
+        } else {
+          console.log('✅ Found: Requested Data Hand-Off =', dealData.Data_Interface_Type)
+        }
+        // Circuit ID already checked in basic validation above
+      } else {
+        console.log('📋 ❌ Condition NOT matched for ACC Complex with standard terms', {
+          productMatch: normalizedProductType === 'ACC Complex' || normalizedProductType === 'ACC-Complex',
+          termMatch: ['12', '24', '36', 'MTM'].includes(normalizedTerm),
+          actualProduct: normalizedProductType,
+          actualTerm: normalizedTerm
+        })
+      }
+      
+      // AT&T Complex with 12 Renewal, 24 Renewal, 36 Renewal - Contract ID Number is required (Circuit ID already checked above)
+      if ((normalizedProductType === 'AT&T Complex' || normalizedProductType === 'AT&T-Complex') && ['12 Renewal', '24 Renewal', '36 Renewal'].includes(normalizedTerm)) {
+        console.log('📋 ✅ CONDITION MATCHED: AT&T Complex with renewal terms...')
+        // Circuit ID already checked in basic validation above
+        if (isFieldEmpty(dealData.Contract_ID_ADIVB_Number)) {
+          missingFields.push('Contract ID Number / ADIVB Number')
+          console.log('❌ Missing: Contract ID Number / ADIVB Number')
+        } else {
+          console.log('✅ Found: Contract ID Number / ADIVB Number =', dealData.Contract_ID_ADIVB_Number)
+        }
+      } else {
+        console.log('📋 ❌ Condition NOT matched for AT&T Complex with renewal terms', {
+          productMatch: normalizedProductType === 'AT&T Complex' || normalizedProductType === 'AT&T-Complex',
+          termMatch: ['12 Renewal', '24 Renewal', '36 Renewal'].includes(normalizedTerm),
+          actualProduct: normalizedProductType,
+          actualTerm: normalizedTerm
+        })
+      }
+      
+      // ACC Complex with 12 Renewal, 24 Renewal, 36 Renewal - Contract ID Number is required (Circuit ID already checked above)
+      if ((normalizedProductType === 'ACC Complex' || normalizedProductType === 'ACC-Complex') && ['12 Renewal', '24 Renewal', '36 Renewal'].includes(normalizedTerm)) {
+        console.log('📋 ✅ CONDITION MATCHED: ACC Complex with renewal terms...')
+        // Circuit ID already checked in basic validation above
+        if (isFieldEmpty(dealData.Contract_ID_ADIVB_Number)) {
+          missingFields.push('Contract ID Number / ADIVB Number')
+          console.log('❌ Missing: Contract ID Number / ADIVB Number')
+        } else {
+          console.log('✅ Found: Contract ID Number / ADIVB Number =', dealData.Contract_ID_ADIVB_Number)
+        }
+      } else {
+        console.log('📋 ❌ Condition NOT matched for ACC Complex with renewal terms', {
+          productMatch: normalizedProductType === 'ACC Complex' || normalizedProductType === 'ACC-Complex',
+          termMatch: ['12 Renewal', '24 Renewal', '36 Renewal'].includes(normalizedTerm),
+          actualProduct: normalizedProductType,
+          actualTerm: normalizedTerm
+        })
+      }
+      
+      console.log('📊 Validation Summary:', {
+        productType: normalizedProductType,
+        term: normalizedTerm,
+        missingFieldsCount: missingFields.length,
+        missingFields: missingFields
+      })
+      
+      return missingFields
+    }
+      // Validate required fields for the contract product
+    const missingRequiredFields = validateRequiredFieldsForPMRequest(contractProductType, contractTerm, dealData)
     
+    if (missingRequiredFields.length > 0) {
+      const errorMessage = `❌ Cannot create PM Request. Missing required fields for ${contractProductType} (${contractTerm}):\n\n${missingRequiredFields.map(field => `• ${field}`).join('\n')}\n\nPlease ensure all required fields have valid (non-empty) values before generating the PM Request.`
+      console.error('🚫 PM Request validation failed:', errorMessage)
+      throw new Error(errorMessage)
+    }
+    
+    console.log('✅ All required fields validation passed for product configuration')
+    console.log('🎯 Ready to create PM Request with validated data')
+
     const pmRequestData: PMRequestData = {
       Request_Type: 'Contract',
       Deals: dealId,
@@ -230,13 +421,13 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       Request_Descriptions: dealData.Description || '',
       Requested_Services: dealData.Curent_Services || '',
       Current_Account_Number: dealData.Account_Number || '',
-      New_Circuit_ID: dealData.Circuit_Id || '',
-      Assigned_PM: 'Marifel Esperida',
+      New_Circuit_ID: dealData.Circuit_Id || '',      Assigned_PM: 'Marifel Esperida',
       // Contract Details
-      Product_Type: contractProductType,
-      Requested_Term: contractTerm,
+      Product_Type: contractProductType.replace(/-/g, ' '),
+      Requested_Term: contractTerm.replace(/-/g, ' '),
       Requested_Data_Hand_Off: dataHandOff,
-      Circuit_ID: circuitId,      Current_MRC: mrcTotal,
+      Circuit_ID: circuitId,
+      Current_MRC: mrcTotal,
       Are_we_Moving_TNs: movingTns,
       Contract_ID_Number_ADIVB_Number: contractIdNumber,
       Sub_Account_ID: subAccountId,
@@ -248,10 +439,10 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
     // Insert the PM Request record
     console.log('Step 6: Inserting PM Request record into Zoho CRM...')
     const insertResponse = await zohoApiCall(async () => {
-      return await window.ZOHO!.CRM!.API!.insertRecord({
-        Entity: 'PM_REQUEST',
+      return await window.ZOHO!.CRM!.API!.insertRecord({        Entity: 'PM_REQUEST',
         APIData: pmRequestData,
-        Trigger: ['approval', 'workflow', 'blueprint']      }) as { data: { code: string; details: { id: string } }[] }
+        Trigger: ['approval', 'workflow', 'blueprint']
+      }) as { data: { code: string; details: { id: string } }[] }
     })
     
     console.log('=== PM REQUEST CREATED SUCCESSFULLY ===')

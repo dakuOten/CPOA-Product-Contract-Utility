@@ -308,6 +308,7 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
           isPMRequestPending={isPMRequestPending}
           hasContractProduct={hasContractProduct}
           dealData={dealData}
+          contractProduct={optimisticProducts.find(product => product.Is_Contract) || null}
           onCloseAndClear={handleCloseAndClear}
           onGeneratePMRequest={handleGeneratePMRequest}
         />

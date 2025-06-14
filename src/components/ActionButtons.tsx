@@ -1,29 +1,47 @@
-import type { ZohoDealData } from '../types/zoho'
+import type { ZohoDealData, ZohoProductSubform } from '../types/zoho'
+import { validateRequiredFieldsForPMRequest } from '../utils/validation/pmRequestValidation'
 
 interface ActionButtonsProps {
   isUpdating: boolean
   isPMRequestPending: boolean
   hasContractProduct: boolean
   dealData: ZohoDealData
+  contractProduct: ZohoProductSubform | null
   onCloseAndClear: () => void
   onGeneratePMRequest: () => void
 }
 
-// Validation function for required fields
-const validateRequiredFields = (dealData: ZohoDealData) => {
-  const requiredFields = [
-    { field: 'Description', value: dealData.Description, label: 'Description' },
-    { field: 'Curent_Services', value: dealData.Curent_Services, label: 'Current Services' },
-    { field: 'Circuit_Id', value: dealData.Circuit_Id, label: 'Circuit ID' }
-  ]
+// Comprehensive validation function that includes product-specific rules
+const validateRequiredFields = (dealData: ZohoDealData, contractProduct: ZohoProductSubform | null) => {
+  if (!contractProduct) {
+    return {
+      isValid: false,
+      missingFields: ['No contract product selected'],
+      requiredFields: []
+    }
+  }
+  const productType = contractProduct.Product_Type || ''
+  const term = contractProduct.Terms || ''
   
-  const missingFields = requiredFields.filter(({ value }) => !value || value.trim() === '')
-  const isValid = missingFields.length === 0
+  console.log('🔍 ActionButtons Validation - Product Details:', {
+    productType,
+    term,
+    productName: contractProduct.Products?.name
+  })
+
+  // Use the comprehensive validation function
+  const missingFields = validateRequiredFieldsForPMRequest(productType, term, dealData)
+  
+  console.log('📊 ActionButtons Validation Result:', {
+    missingFieldsCount: missingFields.length,
+    missingFields,
+    isValid: missingFields.length === 0
+  })
   
   return {
-    isValid,
-    missingFields: missingFields.map(({ label }) => label),
-    requiredFields
+    isValid: missingFields.length === 0,
+    missingFields,
+    requiredFields: [] // This could be enhanced to show all required fields
   }
 }
 
@@ -32,11 +50,12 @@ export default function ActionButtons({
   isPMRequestPending,
   hasContractProduct,
   dealData,
+  contractProduct,
   onCloseAndClear,
   onGeneratePMRequest
 }: ActionButtonsProps) {
   
-  const validation = validateRequiredFields(dealData)
+  const validation = validateRequiredFields(dealData, contractProduct)
   const canGeneratePMRequest = hasContractProduct && validation.isValid
 
   return (
