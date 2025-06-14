@@ -149,19 +149,24 @@ export async function findDealPrimaryContact(dealId: string): Promise<{
   try {
     // Method 1: Use CONNECTION.invoke to fetch Contact Roles
     console.log('Attempting to fetch Contact Roles via CONNECTION.invoke...')
-    
-    const contactRolesResponse = await zohoApiCall<ZohoConnectionResponse>(async () => {      return new Promise<ZohoConnectionResponse>((resolve, reject) => {
+      const contactRolesResponse = await zohoApiCall<ZohoConnectionResponse>(async () => {
+      return new Promise<ZohoConnectionResponse>((resolve, reject) => {
         const extendedWindow = window as unknown as ZohoExtendedWindow
+        
         if (!extendedWindow.ZOHO?.CRM?.CONNECTION) {
           reject(new Error('ZOHO.CRM.CONNECTION not available'))
           return
         }
 
-        extendedWindow.ZOHO.CRM.CONNECTION.invoke!("crm_conn", {
+        // Use different connection names based on environment
+        const connectionName = window.location.hostname === 'localhost' ? 'crm_con' : 'crm_conn'
+        console.log('Using connection name:', connectionName, 'for environment:', window.location.hostname)
+
+        extendedWindow.ZOHO.CRM.CONNECTION.invoke!(connectionName, {
           method: "GET",
           url: `https://www.zohoapis.com/crm/v8/Deals/${dealId}/Contact_Roles?fields=Email,Department`,
           param_type: 1
-        })        .then((response: unknown) => {
+        }).then((response: unknown) => {
           console.log('Contact Roles API Response:', response)
           resolve(response as ZohoConnectionResponse)
         })
