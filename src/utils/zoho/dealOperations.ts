@@ -157,7 +157,7 @@ export async function findDealPrimaryContact(dealId: string): Promise<{
           return
         }
 
-        extendedWindow.ZOHO.CRM.CONNECTION.invoke!("crm_con", {
+        extendedWindow.ZOHO.CRM.CONNECTION.invoke!("crm_conn", {
           method: "GET",
           url: `https://www.zohoapis.com/crm/v8/Deals/${dealId}/Contact_Roles?fields=Email,Department`,
           param_type: 1
