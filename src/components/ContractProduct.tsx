@@ -306,6 +306,7 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
           isUpdating={isUpdating}
           isPMRequestPending={isPMRequestPending}
           hasContractProduct={hasContractProduct}
+          dealData={dealData}
           onCloseAndClear={handleCloseAndClear}
           onGeneratePMRequest={handleGeneratePMRequest}
         />
