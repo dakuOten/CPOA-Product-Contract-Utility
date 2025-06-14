@@ -231,7 +231,7 @@ export async function generatePMRequest(dealId: string): Promise<{ data: { code:
       Requested_Services: dealData.Curent_Services || '',
       Current_Account_Number: dealData.Account_Number || '',
       New_Circuit_ID: dealData.Circuit_Id || '',
-      Assigned_PM: 'Johnly Quindiagan',
+      Assigned_PM: 'Marifel Esperida',
       // Contract Details
       Product_Type: contractProductType,
       Requested_Term: contractTerm,
