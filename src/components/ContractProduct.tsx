@@ -302,7 +302,8 @@ export default function ContractProduct({ dealData, showToast }: ContractProduct
               />
             </div>
           </div>
-        </form>        {/* Action Buttons */}        <ActionButtons
+        </form>        {/* Action Buttons */}        
+        <ActionButtons
           isUpdating={isUpdating}
           isPMRequestPending={isPMRequestPending}
           hasContractProduct={hasContractProduct}
